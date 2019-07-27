@@ -117,9 +117,7 @@ COPY target/dovecot/dovecot-ldap.conf.ext /etc/dovecot
 COPY target/postfix/ldap-users.cf target/postfix/ldap-groups.cf target/postfix/ldap-aliases.cf target/postfix/ldap-domains.cf /etc/postfix/
 
 # Enables Spamassassin CRON updates and update hook for supervisor
-RUN sed -i -r 's/^(CRON)=0/\1=1/g' /etc/default/spamassassin && \
-    sed -i -r 's/^\$INIT restart/supervisorctl restart amavis/g' /etc/spamassassin/sa-update-hooks.d/amavisd-new
-
+RUN sed -i -r 's/^(CRON)=0/\1=1/g' /etc/default/spamassassin
 # Enables Postgrey
 COPY target/postgrey/postgrey /etc/default/postgrey
 COPY target/postgrey/postgrey.init /etc/init.d/postgrey
@@ -130,27 +128,12 @@ RUN chmod 755 /etc/init.d/postgrey && \
 # Copy PostSRSd Config
 COPY target/postsrsd/postsrsd /etc/default/postsrsd
 
-# Enables Amavis
-COPY target/amavis/conf.d/* /etc/amavis/conf.d/
-RUN sed -i -r 's/#(@|   \\%)bypass/\1bypass/g' /etc/amavis/conf.d/15-content_filter_mode && \
-  adduser clamav amavis && \
-  adduser amavis clamav && \
-  # no syslog user in debian compared to ubuntu
-  adduser --system syslog && \
-  useradd -u 5000 -d /home/docker -s /bin/bash -p $(echo docker | openssl passwd -1 -stdin) docker && \
-  (echo "0 4 * * * /usr/local/bin/virus-wiper" ; crontab -l) | crontab -
-
 # Configure Fail2ban
 COPY target/fail2ban/jail.conf /etc/fail2ban/jail.conf
 COPY target/fail2ban/filter.d/dovecot.conf /etc/fail2ban/filter.d/dovecot.conf
 RUN echo "ignoreregex =" >> /etc/fail2ban/filter.d/postfix-sasl.conf && mkdir /var/run/fail2ban
 
 # Enables Pyzor and Razor
-USER amavis
-RUN razor-admin -create && \
-  razor-admin -register
-USER root
-
 # Configure DKIM (opendkim)
 # DKIM config files
 COPY target/opendkim/opendkim.conf /etc/opendkim.conf
