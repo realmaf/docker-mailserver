@@ -25,8 +25,6 @@ RUN apt-get update -q --fix-missing && \
     bzip2 \
     ca-certificates \
     cabextract \
-    clamav \
-    clamav-daemon \
     cpio \
     curl \
     ed \
@@ -96,14 +94,6 @@ RUN apt-get update -q --fix-missing && \
   update-locale && \
   rm -f /etc/cron.weekly/fstrim && \
   rm -f /etc/postsrsd.secret
-
-RUN echo "0 0,6,12,18 * * * root /usr/bin/freshclam --quiet" > /etc/cron.d/clamav-freshclam && \
-  chmod 644 /etc/clamav/freshclam.conf && \
-  freshclam && \
-  sed -i 's/Foreground false/Foreground true/g' /etc/clamav/clamd.conf && \
-  sed -i 's/AllowSupplementaryGroups false/AllowSupplementaryGroups true/g' /etc/clamav/clamd.conf && \
-  mkdir /var/run/clamav && \
-  chown -R clamav:root /var/run/clamav
 
 # Configures Dovecot
 COPY target/dovecot/auth-passwdfile.inc target/dovecot/??-*.conf /etc/dovecot/conf.d/
